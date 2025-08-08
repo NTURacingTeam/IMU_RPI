@@ -1,0 +1,1 @@
+adafruit_lsm303_accel
