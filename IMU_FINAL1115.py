@@ -121,27 +121,27 @@ def send_can_messages(bus, accel_lsm6, accel_lsm303, gyro_data, mag_data, angles
     try:
         # Send LSM6DSOX Accelerometer data
         accel_lsm6_data = pack_acceleration_data(accel_lsm6)
-        msg1 = can.Message(arbitration_id=0x180, data=accel_lsm6_data, is_extended_id=False)
+        msg1 = can.Message(arbitration_id=lsm6_can_label, data=accel_lsm6_data, is_extended_id=False)
         bus.send(msg1)
         
-        # Send LSM303AGR Accelerometer data (0x181)
+        # Send LSM303AGR Accelerometer data
         accel_lsm303_data = pack_acceleration_data(accel_lsm303)
-        msg2 = can.Message(arbitration_id=0x181, data=accel_lsm303_data, is_extended_id=False)
+        msg2 = can.Message(arbitration_id=lsm303_can_label, data=accel_lsm303_data, is_extended_id=False)
         bus.send(msg2)
         
-        # Send Angular Velocity data (0x280)
+        # Send Angular Velocity data
         gyro_data_packed = pack_angular_velocity_data(gyro_data)
-        msg3 = can.Message(arbitration_id=0x280, data=gyro_data_packed, is_extended_id=False)
+        msg3 = can.Message(arbitration_id=gyro_can_label, data=gyro_data_packed, is_extended_id=False)
         bus.send(msg3)
         
-        # Send Euler Angles data (0x380)
+        # Send Euler Angles data
         angle_data = pack_euler_angle_data(angles)
-        msg4 = can.Message(arbitration_id=0x380, data=angle_data, is_extended_id=False)
+        msg4 = can.Message(arbitration_id=euler_can_label, data=angle_data, is_extended_id=False)
         bus.send(msg4)
         
-        # Send Magnetometer data (0x430)
+        # Send Magnetometer data
         mag_data_packed = pack_magnetometer_data(mag_data)
-        msg5 = can.Message(arbitration_id=0x430, data=mag_data_packed, is_extended_id=False)
+        msg5 = can.Message(arbitration_id=mag_can_label, data=mag_data_packed, is_extended_id=False)
         bus.send(msg5)
         
         return True
@@ -154,11 +154,11 @@ def print_can_data_info(accel_lsm6, accel_lsm303, gyro_data, mag_data, angles):
     """Print information about the data being sent"""
     print(f"\nCAN Message Data (100Hz):")
     print("-" * 50)
-    print(f"0x180 - LSM6DSOX Accel: X={accel_lsm6[0]:6.3f}, Y={accel_lsm6[1]:6.3f}, Z={accel_lsm6[2]:6.3f} m/s2")
-    print(f"0x181 - LSM303 Accel:   X={accel_lsm303[0]:6.3f}, Y={accel_lsm303[1]:6.3f}, Z={accel_lsm303[2]:6.3f} m/s2")
-    print(f"0x280 - Angular Vel:    X={gyro_data[0]*57.3:6.1f}, Y={gyro_data[1]*57.3:6.1f}, Z={gyro_data[2]*57.3:6.1f} deg/s")
-    print(f"0x380 - Euler Angles:   Roll={angles[0]:6.1f}, Pitch={angles[1]:6.1f}, Yaw={angles[2]:6.1f} deg")
-    print(f"0x430 - Magnetometer:   X={mag_data[0]:6.1f}, Y={mag_data[1]:6.1f}, Z={mag_data[2]:6.1f} uT")
+    print(f"0x425 - LSM6DSOX Accel: X={accel_lsm6[0]:6.3f}, Y={accel_lsm6[1]:6.3f}, Z={accel_lsm6[2]:6.3f} m/s2")
+    print(f"0x426 - LSM303 Accel:   X={accel_lsm303[0]:6.3f}, Y={accel_lsm303[1]:6.3f}, Z={accel_lsm303[2]:6.3f} m/s2")
+    print(f"0x427 - Angular Vel:    X={gyro_data[0]*57.3:6.1f}, Y={gyro_data[1]*57.3:6.1f}, Z={gyro_data[2]*57.3:6.1f} deg/s")
+    print(f"0x428 - Euler Angles:   Roll={angles[0]:6.1f}, Pitch={angles[1]:6.1f}, Yaw={angles[2]:6.1f} deg")
+    print(f"0x429 - Magnetometer:   X={mag_data[0]:6.1f}, Y={mag_data[1]:6.1f}, Z={mag_data[2]:6.1f} uT")
 
 import csv
 import os
@@ -177,31 +177,7 @@ def listen_for_commands(bus, timeout=0.001):
         print(f"Command listening error: {e}")
     return None
 
-def new_csv_writer(base_dir, base_name):
-    """Create new CSV file with timestamp"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = os.path.join(base_dir, f"{base_name}_{timestamp}.csv")
-    f = open(filename, 'w', newline='')
-    writer = csv.writer(f)
-    writer.writerow(["Time Stamp", "ID", "Extended", "Dir", "Bus", "LEN", "D1",
-                     "D2", "D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10",
-                     "D11", "D12"])
-    return f, writer
-
-def write_can_message_to_csv(writer, can_id, data_bytes):
-    """Write CAN message to CSV in the same format as canlogging.py"""
-    timestamp = int(time.time() * 1000000)  # microseconds
-    can_id_str = f"{can_id:08X}"
-    extended = 'false'  # Standard CAN IDs
-    direction = 'Tx'  # We're transmitting
-    bus_num = 0
-    dlc = len(data_bytes)
-    
-    # Format data bytes as hex strings
-    data_hex = [f"{byte:02X}" for byte in data_bytes]
-    data_hex += ['00'] * (8 - len(data_hex))  # Pad to 8 bytes
-    
-    writer.writerow([timestamp, can_id_str, extended, direction, bus_num, dlc] + data_hex)
+# CSV 相關函數已移除
 
 def main():
     # Initialize I2C
@@ -210,56 +186,40 @@ def main():
     # Initialize sensors
     print("Initializing sensors...")
     try:
-        imu = adafruit_lsm6ds.lsm6dsox.LSM6DSOX(i2c, address=0x6B)
+        imu = adafruit_lsm6ds.lsm6dsox.LSM6DSOX(i2c, address=0x6A)
         accel303 = adafruit_lsm303_accel.LSM303_Accel(i2c)
         mag303 = adafruit_lis2mdl.LIS2MDL(i2c)
-        print("All sensors initialized successfully")
+        print("✓ All sensors initialized successfully")
     except Exception as e:
-        print(f"Sensor initialization failed: {e}")
+        print(f"✗ Sensor initialization failed: {e}")
         return
     
     # Initialize CAN bus
     can_bus = init_can_bus()
     if not can_bus:
-        print("CAN bus initialization failed, exiting...")
+        print("✗ CAN bus initialization failed, exiting...")
         return
     
-    # Setup CSV logging
-    base_dir = "/home/pi/Desktop/IMU_LOGS"
-    os.makedirs(base_dir, exist_ok=True)
-    csv_file, csv_writer = new_csv_writer(base_dir, "imu_can_log")
-    
-    print("IMU CAN Gateway with CSV Logging Ready")
-    print("Command Protocol:")
-    print("  - Send to 0x420: [XX, 0x01] to START CAN transmission")
-    print("  - Send to 0x420: [XX, 0x02] to STOP CAN transmission")
-    print("Data IDs: 0x180 (LSM6 Accel), 0x181 (LSM303 Accel), 0x280 (Gyro), 0x380 (Angles), 0x430 (Mag)")
-    print("CSV Logging: Always active, saving all IMU data in CAN format")
+    print("\n" + "="*60)
+    print("IMU CAN Gateway Started - No Commands Needed")
+    print("="*60)
+    print("CAN Data Channels:")
+    print("  • 0x425 (LSM6 Accel)")
+    print("  • 0x426 (LSM303 Accel)")
+    print("  • 0x427 (Gyro/Angular Vel)")
+    print("  • 0x428 (Euler Angles)")
+    print("  • 0x429 (Magnetometer)")
     print("Frequency: 100 Hz")
-    print("Listening for commands on 0x420...")
+    print("CSV Logging: Disabled")
+    print("="*60 + "\n")
     
-    is_transmitting = False
     message_count = 0
-    csv_count = 0
     start_time = time.time()
     
     try:
         while True:
             loop_start = time.time()
             
-            # Listen for commands
-            command = listen_for_commands(can_bus)
-            if command is not None:
-                if command == 0x01 and not is_transmitting:
-                    is_transmitting = True
-                    message_count = 0
-                    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] COMMAND RECEIVED: START CAN transmission (0x01)")
-                elif command == 0x02 and is_transmitting:
-                    is_transmitting = False
-                    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] COMMAND RECEIVED: STOP CAN transmission (0x02)")
-                    print(f"Total CAN messages sent in this session: {message_count}")
-            
-            # Always read sensor data and write to CSV
             try:
                 # Read sensor data
                 accel_lsm6 = imu.acceleration
@@ -270,60 +230,46 @@ def main():
                 # Calculate Euler angles
                 euler_angles = calculate_euler_angles(accel_lsm6, mag_lsm303)
                 
-                # Pack data for CSV logging (always)
+                # Pack data
                 accel_lsm6_data = pack_acceleration_data(accel_lsm6)
                 accel_lsm303_data = pack_acceleration_data(accel_lsm303)
                 gyro_data_packed = pack_angular_velocity_data(gyro_lsm6)
                 angle_data = pack_euler_angle_data(euler_angles)
                 mag_data_packed = pack_magnetometer_data(mag_lsm303)
                 
-                # Write all messages to CSV (always active)
-                write_can_message_to_csv(csv_writer, 0x425, accel_lsm6_data)
-                write_can_message_to_csv(csv_writer, 0x426, accel_lsm303_data)
-                write_can_message_to_csv(csv_writer, 0x427, gyro_data_packed)
-                write_can_message_to_csv(csv_writer, 0x428, angle_data)
-                write_can_message_to_csv(csv_writer, 0x429, mag_data_packed)
-                csv_count += 5
-                
-                # Send CAN messages only if transmission is enabled
-                if is_transmitting:
-                    try:
-                        msg1 = can.Message(arbitration_id=0x425, data=accel_lsm6_data, is_extended_id=False)
-                        can_bus.send(msg1)
-                        
-                        msg2 = can.Message(arbitration_id=0x426, data=accel_lsm303_data, is_extended_id=False)
-                        can_bus.send(msg2)
+                # Send all CAN messages immediately
+                try:
+                    msg1 = can.Message(arbitration_id=lsm6_can_label, data=accel_lsm6_data, is_extended_id=False)
+                    can_bus.send(msg1)
 
-                        msg3 = can.Message(arbitration_id=0x427, data=gyro_data_packed, is_extended_id=False)
-                        can_bus.send(msg3)
+                    msg2 = can.Message(arbitration_id=lsm303_can_label, data=accel_lsm303_data, is_extended_id=False)
+                    can_bus.send(msg2)
 
-                        msg4 = can.Message(arbitration_id=0x428, data=angle_data, is_extended_id=False)
-                        can_bus.send(msg4)
+                    msg3 = can.Message(arbitration_id=gyro_can_label, data=gyro_data_packed, is_extended_id=False)
+                    can_bus.send(msg3)
 
-                        msg5 = can.Message(arbitration_id=0x429, data=mag_data_packed, is_extended_id=False)
-                        can_bus.send(msg5)
-                        
-                        message_count += 5
-                        
-                    except Exception as e:
-                        print(f"Failed to send CAN messages: {e}")
+                    msg4 = can.Message(arbitration_id=euler_can_label, data=angle_data, is_extended_id=False)
+                    can_bus.send(msg4)
+
+                    msg5 = can.Message(arbitration_id=mag_can_label, data=mag_data_packed, is_extended_id=False)
+                    can_bus.send(msg5)
+                    
+                    message_count += 5
+                    
+                except Exception as e:
+                    print(f"✗ Failed to send CAN messages: {e}")
                 
                 # Print status every second
-                if csv_count % 500 == 0:  # Every 100 loops (1 second)
+                if message_count % 500 == 0 and message_count > 0:  # Every 100 loops (1 second)
                     elapsed_time = time.time() - start_time
-                    csv_freq = csv_count / elapsed_time if elapsed_time > 0 else 0
-                    can_freq = message_count / elapsed_time if elapsed_time > 0 and is_transmitting else 0
+                    can_freq = message_count / elapsed_time if elapsed_time > 0 else 0
                     
                     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Status:")
-                    print(f"  CSV Records: {csv_count}, Freq: {csv_freq:.1f} Hz")
-                    if is_transmitting:
-                        print(f"  CAN Messages: {message_count}, Freq: {can_freq:.1f} Hz")
-                        print_can_data_info(accel_lsm6, accel_lsm303, gyro_lsm6, mag_lsm303, euler_angles)
-                    else:
-                        print(f"  CAN Transmission: STOPPED (data still logged to CSV)")
+                    print(f"  CAN Messages: {message_count}, Frequency: {can_freq:.1f} Hz")
+                    print_can_data_info(accel_lsm6, accel_lsm303, gyro_lsm6, mag_lsm303, euler_angles)
                 
             except Exception as e:
-                print(f"Data processing error: {e}")
+                print(f"✗ Data processing error: {e}")
             
             # Maintain 100Hz frequency
             loop_time = time.time() - loop_start
@@ -331,18 +277,14 @@ def main():
             time.sleep(sleep_time)
             
     except KeyboardInterrupt:
-        print(f"\nProgram terminated")
-        print(f"Total CSV records written: {csv_count}")
-        if is_transmitting:
-            print(f"Total CAN messages sent: {message_count}")
-        else:
-            print("CAN transmission was stopped")
+        print(f"\n{'='*60}")
+        print(f"Program terminated by user")
+        print(f"Total CAN messages sent: {message_count}")
+        print(f"{'='*60}")
         
     finally:
-        # Close CSV file
-        if csv_file:
-            csv_file.close()
-            print("CSV file closed")
+        print("Shutting down...")
+
 
 if __name__ == "__main__":
     main()
