@@ -16,7 +16,7 @@ import adafruit_lis2mdl
 lsm6_can_label = 0x185
 lsm303_can_label = 0x426
 gyro_can_label = 0x285
-euler_can_label = 0x485
+euler_can_label = 0x385
 mag_can_label = 0x429
 
 def init_can_bus():
@@ -44,8 +44,14 @@ def float_to_int16_scaled(value, scale_factor):
 def pack_acceleration_data(accel_data):
     """Pack acceleration data into CAN message format"""
     # Scale factor: 0.001 g (1 LSB = 0.001g)
-    scale_factor = 1000  # Convert mm/s2 to mg
+    scale_factor = 1000/9.81  # Convert mm/s2 to mg
     
+    # Swap X and Y axes, and invert new X axis
+    # test = -accel_data[0]
+    # accel_data[0] = accel_data[1]
+    # accel_data[1] = test
+
+
     ax_int = float_to_int16_scaled(accel_data[0], scale_factor)
     ay_int = float_to_int16_scaled(accel_data[1], scale_factor)
     az_int = float_to_int16_scaled(accel_data[2], scale_factor)
@@ -58,7 +64,12 @@ def pack_angular_velocity_data(gyro_data):
     # Scale factor: 0.1 DPS (1 LSB = 0.1 degrees per second)
     # Convert rad/s to deg/s first, then scale
     scale_factor = 10 * 57.2958  # Convert rad/s to 0.1 deg/s
-    
+
+    # Swap X and Y axes, and invert new X axis
+    # testg = -gyro_data[0]
+    # gyro_data[0] = gyro_data[1]
+    # gyro_data[1] = testg
+
     gx_int = float_to_int16_scaled(gyro_data[0], scale_factor)
     gy_int = float_to_int16_scaled(gyro_data[1], scale_factor)
     gz_int = float_to_int16_scaled(gyro_data[2], scale_factor)
@@ -157,7 +168,7 @@ def print_can_data_info(accel_lsm6, accel_lsm303, gyro_data, mag_data, angles):
     print(f"0x185 - LSM6DSOX Accel: X={accel_lsm6[0]:6.3f}, Y={accel_lsm6[1]:6.3f}, Z={accel_lsm6[2]:6.3f} m/s2")
     print(f"0x426 - LSM303 Accel:   X={accel_lsm303[0]:6.3f}, Y={accel_lsm303[1]:6.3f}, Z={accel_lsm303[2]:6.3f} m/s2")
     print(f"0x285 - Angular Vel:    X={gyro_data[0]*57.3:6.1f}, Y={gyro_data[1]*57.3:6.1f}, Z={gyro_data[2]*57.3:6.1f} deg/s")
-    print(f"0x485 - Euler Angles:   Roll={angles[0]:6.1f}, Pitch={angles[1]:6.1f}, Yaw={angles[2]:6.1f} deg")
+    print(f"0x385 - Euler Angles:   Roll={angles[0]:6.1f}, Pitch={angles[1]:6.1f}, Yaw={angles[2]:6.1f} deg")
     print(f"0x429 - Magnetometer:   X={mag_data[0]:6.1f}, Y={mag_data[1]:6.1f}, Z={mag_data[2]:6.1f} uT")
 
 import csv
@@ -207,7 +218,7 @@ def main():
     print("  • 0x185 (LSM6 Accel)")
     print("  • 0x426 (LSM303 Accel)")
     print("  • 0x285 (Gyro/Angular Vel)")
-    print("  • 0x485 (Euler Angles)")
+    print("  • 0x385 (Euler Angles)")
     print("  • 0x429 (Magnetometer)")
     print("Frequency: 100 Hz")
     print("CSV Logging: Disabled")
@@ -231,9 +242,13 @@ def main():
                 euler_angles = calculate_euler_angles(accel_lsm6, mag_lsm303)
                 
                 # Pack data
-                accel_lsm6_data = pack_acceleration_data(accel_lsm6)
-                accel_lsm303_data = pack_acceleration_data(accel_lsm303)
-                gyro_data_packed = pack_angular_velocity_data(gyro_lsm6)
+                accelrefresh1 = (accel_lsm6[1], -accel_lsm6[0], accel_lsm6[2])
+                gyro_lsm6refresh = (gyro_lsm6[1], -gyro_lsm6[0], gyro_lsm6[2])
+                accelrefresh2 = (accel_lsm303[1], -accel_lsm303[0], accel_lsm303[2])
+
+                accel_lsm6_data = pack_acceleration_data(accelrefresh1)
+                accel_lsm303_data = pack_acceleration_data(accelrefresh2)
+                gyro_data_packed = pack_angular_velocity_data(gyro_lsm6refresh)
                 angle_data = pack_euler_angle_data(euler_angles)
                 mag_data_packed = pack_magnetometer_data(mag_lsm303)
                 
