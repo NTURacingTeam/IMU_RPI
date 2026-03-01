@@ -245,12 +245,13 @@ def main():
                 accelrefresh1 = (accel_lsm6[1], -accel_lsm6[0], accel_lsm6[2])
                 gyro_lsm6refresh = (gyro_lsm6[1], -gyro_lsm6[0], gyro_lsm6[2])
                 accelrefresh2 = (accel_lsm303[1], -accel_lsm303[0], accel_lsm303[2])
+                mag_lsm303refresh = (mag_lsm303[1], -mag_lsm303[0], mag_lsm303[2])
 
                 accel_lsm6_data = pack_acceleration_data(accelrefresh1)
                 accel_lsm303_data = pack_acceleration_data(accelrefresh2)
                 gyro_data_packed = pack_angular_velocity_data(gyro_lsm6refresh)
                 angle_data = pack_euler_angle_data(euler_angles)
-                mag_data_packed = pack_magnetometer_data(mag_lsm303)
+                mag_data_packed = pack_magnetometer_data(mag_lsm303refresh)
                 
                 # Send all CAN messages immediately
                 try:
